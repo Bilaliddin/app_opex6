@@ -3,5 +3,8 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "git.postCommitCommand": "push",
+  "git.autofetch": true,
+  "git.enableSmartCommit": true
 }
