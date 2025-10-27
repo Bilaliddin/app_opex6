@@ -1,45 +1,35 @@
-import { api } from '@/lib/api';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+// app/signup.tsx
+import { Link, router } from 'expo-router';
+import { Text, TouchableOpacity, View } from 'react-native';
 
-export default function Signup() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const handleSignup = async () => {
-    setErr(''); setBusy(true);
-    try {
-      await api.signup({ email, password });
-      router.replace('/login');
-    } catch (e: any) {
-      setErr(e?.message || 'Signup failed');
-    } finally { setBusy(false); }
-  };
-
+export default function SignupOptions() {
   return (
-    <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 12 }}>Create account</Text>
+    <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16 }}>
+      <Text style={{ fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
+        Create your account
+      </Text>
 
-      <Text>Email</Text>
-      <TextInput value={email} onChangeText={setEmail} autoCapitalize="none"
-                 keyboardType="email-address"
-                 style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 12 }} />
+      <TouchableOpacity onPress={() => router.push('/signup_with_google')}>
+        <Text style={{ textAlign: 'center', padding: 12, borderWidth: 1, borderRadius: 12 }}>
+          Continue with Google
+        </Text>
+      </TouchableOpacity>
 
-      <Text>Password</Text>
-      <TextInput value={password} onChangeText={setPassword} secureTextEntry
-                 style={{ borderWidth: 1, borderRadius: 10, padding: 12 }} />
+      <TouchableOpacity onPress={() => {/* позже добавим Microsoft */}}>
+        <Text style={{ textAlign: 'center', padding: 12, borderWidth: 1, borderRadius: 12 }}>
+          Continue with Microsoft
+        </Text>
+      </TouchableOpacity>
 
-      {!!err && <Text style={{ color: 'red', marginTop: 8 }}>{err}</Text>}
+      <TouchableOpacity onPress={() => router.push('/create_user_profil?mode=email')}>
+        <Text style={{ textAlign: 'center', padding: 12, borderWidth: 1, borderRadius: 12 }}>
+          Sign up with Email
+        </Text>
+      </TouchableOpacity>
 
-      <Pressable onPress={handleSignup} disabled={busy}
-                 style={{ marginTop: 16, height: 48, borderRadius: 12, backgroundColor: '#5271ff',
-                          alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#fff', fontWeight: '700' }}>{busy ? 'Creating...' : 'Sign up'}</Text>
-      </Pressable>
+      <Link href="/login" style={{ textAlign: 'center', marginTop: 8 }}>
+        Back to login
+      </Link>
     </View>
   );
 }

@@ -1,3 +1,39 @@
+<!-- opex6
+cd C:\Dev\rn\app_opex6
+npx expo start -c
+r
+npm i
+
+
+# 1) Перейти в папку проекта (исправь путь под себя)
+cd C:\Dev\rn\app_opex6
+
+# 2) Запустить Android-эмулятор (любой из списка)
+& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -list-avds
+# подставь имя из списка (например: Medium_Phone_API_36.1)
+& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd Medium_Phone_API_36.1
+# при ощибке 
+# Перезапуск демона ADB
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" kill-server
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" start-server
+
+# 3) Проверить, что ADB видит устройство
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" devices
+
+# 4) Установить/обновить зависимости (если нужно)
+npm i
+
+# 5) Запустить Expo с очисткой кэша Metro
+npx expo start -c
+
+# 6) Открыть проект на эмуляторе (в окне Expo можно нажать "a")
+# или командой:
+npx expo start --android
+
+-->
+
+
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).

@@ -14,11 +14,14 @@ export default function Login() {
 
   const handleLogin = async () => {
     setErr('');
+    if (!login.trim() || !password) {
+      setErr('Enter your login and password.');
+      return;
+    }
     try {
-      // на сервере мы логиним по email — если ты хочешь username, поправим бэкенд
-      await signIn({ email: login, password });
-    } catch (e: any) {
-      setErr(e?.message || 'Login failed');
+      await signIn({ login: login.trim(), password });
+    } catch {
+      setErr('Check your login and password.');
     }
   };
 
@@ -31,23 +34,23 @@ export default function Login() {
     <View style={s.container}>
       <Text style={s.title}>Welcome to project opex6</Text>
 
-      <Text style={s.label}>Login</Text>
+      <Text style={s.label}>Your username or email</Text>
       <TextInput
         value={login}
         onChangeText={setLogin}
         autoCapitalize="none"
         keyboardType="email-address"
-        placeholder="you@example.com"
+        placeholder="Login or email"
         placeholderTextColor="#7a8699"
         style={s.input}
       />
 
-      <Text style={s.label}>Password</Text>
+      <Text style={s.label}>Enter the password</Text>
       <TextInput
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        placeholder="••••••••"
+        placeholder="Password"
         placeholderTextColor="#7a8699"
         style={s.input}
       />

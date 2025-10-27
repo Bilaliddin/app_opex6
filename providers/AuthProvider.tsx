@@ -45,14 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const signIn = async ({ email, password }: { email: string; password: string }) => {
+  // внутри AuthProvider
+  const signIn = async (p: { login: string; password: string }) => {
     setSigning(true);
     try {
-      const { token: t, user: u } = await api.login({ email, password });
-      await SecureStore.setItemAsync('auth_token', t);
-      setToken(t);
-      setUser(u);
-      router.replace('/(tabs)'); // сразу в main
+      const resp = await api.loginFlexible(p);
+      await SecureStore.setItemAsync('token', resp.token);
+      if (resp.refresh) await SecureStore.setItemAsync('refresh', resp.refresh);
+      setUser(resp.user);
+      // навигация в Tabs у тебя уже настроена через гейт в app/index.tsx
     } finally {
       setSigning(false);
     }

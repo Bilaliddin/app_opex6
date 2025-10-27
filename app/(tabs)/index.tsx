@@ -1,82 +1,146 @@
 // app/(tabs)/index.tsx
-import { Image } from 'expo-image';
-import { Platform, Pressable, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/providers/AuthProvider';
+import { router } from 'expo-router';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function HomeScreen() {
+export default function MainScreen() {
   const { user, signOut } = useAuth();
+  const displayName = user?.username || user?.email || 'user';
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">opex6 — Main</ThemedText>
-        <HelloWave />
-      </ThemedView>
+    <SafeAreaView style={s.root}>
+      {/* Header */}
+      <View style={s.header}>
+        <Text style={s.brand} numberOfLines={1}>opex6.com — Main Menu</Text>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Account</ThemedText>
-        <ThemedText>
-          {user ? `Logged in as: ${user.email}` : 'No user loaded'}
-        </ThemedText>
+        <View style={s.headerRight}>
+          {user ? (
+            <Pressable onPress={() => router.push('/profile')} style={s.profileBtn}>
+              <Text style={s.profileBtnText} numberOfLines={1} ellipsizeMode="tail">
+                {displayName}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={s.muted} numberOfLines={1}>Not signed in</Text>
+          )}
 
-        <Pressable onPress={signOut} style={styles.button}>
-          <ThemedText style={styles.buttonText}>Log out</ThemedText>
-        </Pressable>
-      </ThemedView>
+          <Pressable onPress={signOut} style={s.logoutBtn}>
+            <Text style={s.logoutBtnText}>Log Out</Text>
+          </Pressable>
+        </View>
+      </View>
 
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Dev tips</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes. Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m', web: 'F12' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <ScrollView contentContainerStyle={s.container}>
+        {/* Navigation card */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Navigation</Text>
+          <Text style={s.muted}>
+            Sections (API widgets) will appear here: file upload, projects, settings, etc.
+          </Text>
+        </View>
+
+        {/* Tiles row */}
+        <View style={s.row}>
+          <Pressable style={s.tile} onPress={() => { /* TODO: navigate to Upload screen */ }}>
+            <Text style={s.tileTitle}>CSV Upload</Text>
+            <Text style={s.muted}>Via API — already connected</Text>
+          </Pressable>
+
+          <Pressable style={s.tile} onPress={() => { /* TODO: navigate to Projects */ }}>
+            <Text style={s.tileTitle}>Projects</Text>
+            <Text style={s.muted}>List of tasks/pipelines</Text>
+          </Pressable>
+
+          <Pressable style={s.tile} onPress={() => { /* TODO: navigate to Reports */ }}>
+            <Text style={s.tileTitle}>Reports</Text>
+            <Text style={s.muted}>Later: PDF/PPT export</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#0f1624' },
+
+  header: {
+    paddingHorizontal: 18,      // было 25 — делаем компактнее
+    paddingVertical: 16,        // было 25 — делаем компактнее
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 12,
+
+  brand: {
+    color: '#e9eef7',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    flexShrink: 1,              // чтобы не распирало шапку
+    marginRight: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,                     // было 12 — чуть меньше
+    maxWidth: '56%',            // было 60% — сузили, чтобы не выходило за рамки
+    flexShrink: 1,
   },
-  button: {
-    marginTop: 12,
-    height: 44,
+
+  profileBtn: {
+    minHeight: 34,
+    paddingHorizontal: 10,
     borderRadius: 10,
+    backgroundColor: '#233055',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#5271ff',
+    maxWidth: 180,              // ограничим ширину кнопки с именем
   },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '700',
+  profileBtnText: { color: '#e9eef7', fontWeight: '700', fontSize: 13 },
+
+  logoutBtn: {
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#1a2240',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  logoutBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+  container: { paddingHorizontal: 20, paddingVertical: 24 },
+
+  card: {
+    backgroundColor: '#141a2a',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+  },
+  cardTitle: { color: '#e9eef7', fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  muted: { color: '#9fb0cf', fontSize: 14 },
+
+  row: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+  tile: {
+    flexGrow: 1,
+    flexBasis: 280,
+    minHeight: 120,
+    backgroundColor: '#131b33',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255,255,255,0.13)',
+    borderRadius: 12,
+    padding: 16,
+    justifyContent: 'center',
+  },
+  tileTitle: { color: '#e9eef7', fontWeight: '700', marginBottom: 6 },
 });

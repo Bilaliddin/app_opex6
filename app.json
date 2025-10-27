@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "MyApp",
-    "slug": "MyApp",
-    "version": "1.0.0",
+    "name": "Opex6",
+    "slug": "Opex6",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.opex6.app"
     },
     "web": {
       "output": "static",
