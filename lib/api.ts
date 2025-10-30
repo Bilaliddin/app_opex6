@@ -1,105 +1,94 @@
 // lib/api.ts
-import { API_BASE } from '@/constants/config';
+import * as SecureStore from 'expo-secure-store';
+import { BASE_URL as CONFIG_BASE_URL } from '@/constants/config';
 
-export type User = { id: number; email: string; username?: string };
+export type User = {
+  id: number;
+  email: string;
+  username: string;
+};
 
-type ReqInit = RequestInit & { token?: string };
+export const API_BASE = (CONFIG_BASE_URL || 'https://app.opex6.com').replace(/\/$/, '');
 
-async function request<T = any>(path: string, init: ReqInit = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-    ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
-    ...(init.headers as any),
-  };
-
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-
-  // 204 No Content
-  if (res.status === 204) return null as T;
-
-  const text = await res.text();
-  const data = (() => {
-    try {
-      return text ? JSON.parse(text) : null;
-    } catch {
-      return null;
-    }
-  })();
-
-  if (!res.ok) {
-    const detail = (data as any)?.detail ?? (data as any)?.error ?? text ?? `HTTP ${res.status}`;
-    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+async function toJson<T>(res: Response): Promise<T> {
+  const txt = await res.text();
+  try {
+    return JSON.parse(txt);
+  } catch {
+    throw new Error(`Bad JSON (${res.status}): ${txt.slice(0, 200)}`);
   }
+}
 
-  return (data ?? (text as any)) as T;
+async function http<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`${res.status} ${res.statusText}: ${msg}`);
+  }
+  return toJson<T>(res);
+}
+
+export async function loginFlexible(params: { login: string; password: string }) {
+  // Accepts username or email in `login` per server contract
+  return http<{ token: string; refresh?: string; user: User }>(`${API_BASE}/api/auth/login/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+}
+
+export async function me(token: string) {
+  return http<User>(`${API_BASE}/api/auth/profil/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function saveTokens(token: string, refresh?: string) {
+  await SecureStore.setItemAsync('token', token);
+  if (refresh) await SecureStore.setItemAsync('refresh', refresh);
+}
+
+// Optional helpers for signup flows (scaffold; server endpoints may change)
+export async function checkUsername(username: string) {
+  try {
+    return await http<{ available: boolean }>(`${API_BASE}/api/auth/check-username?username=${encodeURIComponent(username)}`);
+  } catch {
+    // If server not ready, optimistically allow
+    return { available: true };
+  }
+}
+
+export async function socialGoogleVerify(idToken: string) {
+  // Exchange Google ID token for app registration or login
+  return http<
+    | { status: 'existing' }
+    | { status: 'new'; registration_token: string; email?: string; given_name?: string; family_name?: string }
+  >(`${API_BASE}/api/auth/social/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+}
+
+export async function completeSignup(params: {
+  registration_token: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+}) {
+  return http<{ token: string; refresh?: string }>(`${API_BASE}/api/auth/complete-signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
 }
 
 export const api = {
-  // --- AUTH (базовые) ---
-  // POST /api/auth/login/ → { token, refresh?, user }
-  login(p: { email: string; password: string }): Promise<{ token: string; refresh?: string; user: User }> {
-    return request('/api/auth/login/', { method: 'POST', body: JSON.stringify(p) });
-  },
-
-  loginFlexible(p: { login: string; password: string }): Promise<{ token: string; refresh?: string; user: User }> {
-  const body: any = { login: p.login, password: p.password };
-  if (p.login.includes('@')) body.email = p.login; // сервер примет и login, и email
-  return request('/api/auth/login/', { method: 'POST', body: JSON.stringify(body) });
-  },
-
-  // GET /api/auth/profil/ (JWT в заголовке)
-  me(token: string): Promise<User> {
-    return request('/api/auth/profil/', { method: 'GET', token });
-  },
-
-  // POST /api/auth/signup/ → 201 { id, email }
-  signup(p: { email: string; password: string }): Promise<{ id: number; email: string }> {
-    return request('/api/auth/signup/', { method: 'POST', body: JSON.stringify(p) });
-  },
-
-  // POST /api/auth/refresh/ → { access } → нормализуем в { token }
-  async refresh(refresh: string): Promise<{ token: string }> {
-    const { access } = await request<{ access: string }>('/api/auth/refresh/', {
-      method: 'POST',
-      body: JSON.stringify({ refresh }),
-    });
-    return { token: access };
-  },
-
-  // --- SOCIAL: Google ---
-  // POST /api/auth/social/google/  Body: { id_token }
-  // Ответы:
-  //   { status: "existing", email }
-  //   { status: "new", email, given_name, family_name, registration_token }
-  socialGoogleVerify(idToken: string): Promise<
-    | { status: 'existing'; email: string }
-    | { status: 'new'; email: string; given_name?: string; family_name?: string; registration_token: string }
-  > {
-    return request('/api/auth/social/google/', {
-      method: 'POST',
-      body: JSON.stringify({ id_token: idToken }),
-    });
-  },
-
-  // GET /api/auth/username-check/?username=foo → { available: boolean }
-  usernameCheck(username: string): Promise<{ available: boolean }> {
-    return request(`/api/auth/username-check/?username=${encodeURIComponent(username)}`, { method: 'GET' });
-  },
-
-  // POST /api/auth/complete-signup/
-  // Body: { registration_token, username, first_name, last_name, password }
-  // Ответ: { token, refresh, user }
-  completeSignup(p: {
-    registration_token: string;
-    username: string;
-    first_name: string;
-    last_name: string;
-    password: string;
-  }): Promise<{ token: string; refresh?: string; user: User }> {
-    return request('/api/auth/complete-signup/', {
-      method: 'POST',
-      body: JSON.stringify(p),
-    });
-  },
+  loginFlexible,
+  me,
+  saveTokens,
+  checkUsername,
+  socialGoogleVerify,
+  completeSignup,
 };

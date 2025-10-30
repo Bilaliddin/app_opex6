@@ -9,7 +9,7 @@ type Ctx = {
   signing: boolean;
   token: string | null;
   user: User | null;
-  signIn: (p: { email: string; password: string }) => Promise<void>;
+  signIn: (p: { login: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -28,39 +28,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
-  // поднятие сессии при старте
+  // Load session from secure storage
   useEffect(() => {
     (async () => {
-      const t = await SecureStore.getItemAsync('auth_token');
+      const t = await SecureStore.getItemAsync('token');
       if (t) {
         try {
           const u = await api.me(t);
           setToken(t);
           setUser(u);
         } catch {
-          await SecureStore.deleteItemAsync('auth_token');
+          await SecureStore.deleteItemAsync('token');
+          await SecureStore.deleteItemAsync('refresh');
         }
       }
       setInitializing(false);
     })();
   }, []);
 
-  // внутри AuthProvider
   const signIn = async (p: { login: string; password: string }) => {
     setSigning(true);
     try {
       const resp = await api.loginFlexible(p);
-      await SecureStore.setItemAsync('token', resp.token);
-      if (resp.refresh) await SecureStore.setItemAsync('refresh', resp.refresh);
+      await api.saveTokens(resp.token, resp.refresh);
+      setToken(resp.token);
       setUser(resp.user);
-      // навигация в Tabs у тебя уже настроена через гейт в app/index.tsx
+      router.replace('/(tabs)');
     } finally {
       setSigning(false);
     }
   };
 
   const signOut = async () => {
-    await SecureStore.deleteItemAsync('auth_token');
+    await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('refresh');
     setToken(null);
     setUser(null);
     router.replace('/login');
@@ -74,3 +75,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+

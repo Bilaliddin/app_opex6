@@ -9,20 +9,15 @@ export default function MainScreen() {
 
   return (
     <SafeAreaView style={s.root}>
-      {/* Header */}
       <View style={s.header}>
-        <Text style={s.brand} numberOfLines={1}>opex6.com — Main Menu</Text>
+        <Text style={s.brand} numberOfLines={1}>opex6.com — Main</Text>
 
         <View style={s.headerRight}>
-          {user ? (
-            <Pressable onPress={() => router.push('/profile')} style={s.profileBtn}>
-              <Text style={s.profileBtnText} numberOfLines={1} ellipsizeMode="tail">
-                {displayName}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text style={s.muted} numberOfLines={1}>Not signed in</Text>
-          )}
+          <Pressable onPress={() => router.push('/profil')} style={s.profileBtn}>
+            <Text style={s.profileBtnText} numberOfLines={1} ellipsizeMode="tail">
+              {displayName}
+            </Text>
+          </Pressable>
 
           <Pressable onPress={signOut} style={s.logoutBtn}>
             <Text style={s.logoutBtnText}>Log Out</Text>

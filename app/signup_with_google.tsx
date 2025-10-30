@@ -21,6 +21,8 @@ export default function SignupWithGoogle() {
       responseType: AuthSession.ResponseType.IdToken,
       scopes: ['openid', 'email', 'profile'],
       redirectUri: AuthSession.makeRedirectUri(), // Expo-managed
+      usePKCE: false, // Prevent Google error: code_challenge_method not allowed for id_token flow
+      extraParams: { nonce: Math.random().toString(36).slice(2) },
     },
     discovery
   );

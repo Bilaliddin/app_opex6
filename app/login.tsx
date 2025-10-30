@@ -1,56 +1,88 @@
-
 // app/login.tsx
+import { GOOGLE_ANDROID_CLIENT_ID } from '@/constants/config';
 import { useAuth } from '@/providers/AuthProvider';
 import { FontAwesome5 } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function Login() {
   const { signIn, signing } = useAuth();
-  const [login, setLogin] = useState('');      // email/username
+  const [login, setLogin] = useState(''); // логин или email
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
 
   const handleLogin = async () => {
     setErr('');
     if (!login.trim() || !password) {
-      setErr('Enter your login and password.');
+      setErr('Введите логин и пароль.');
       return;
     }
     try {
       await signIn({ login: login.trim(), password });
     } catch {
-      setErr('Check your login and password.');
+      setErr('Введён не правильный логин или пароль');
     }
   };
 
   const handleGoogle = async () => {
-    // TODO: подключим позже через expo-auth-session + Android OAuth Client ID
-    setErr('Google Sign-In is not configured yet');
+    if (!GOOGLE_ANDROID_CLIENT_ID) {
+      Alert.alert('Google OAuth', 'Вход через Google пока не настроен.');
+      return;
+    }
+    try {
+      const discovery = {
+        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenEndpoint: 'https://oauth2.googleapis.com/token',
+      } as const;
+      const redirectUri = AuthSession.makeRedirectUri();
+      const request = new AuthSession.AuthRequest({
+        clientId: GOOGLE_ANDROID_CLIENT_ID,
+        responseType: AuthSession.ResponseType.IdToken,
+        scopes: ['openid', 'email', 'profile'],
+        redirectUri,
+        // Fix for Google error: Parameter not allowed for this message type: code_challenge_method
+        // PKCE is only for response_type=code; disable it for implicit id_token
+        usePKCE: false,
+        // Nonce recommended for OIDC implicit flow
+        extraParams: { nonce: Math.random().toString(36).slice(2) },
+      });
+      await request.makeAuthUrlAsync(discovery);
+      const result = await request.promptAsync(discovery);
+      if (result.type === 'success' && result.params.id_token) {
+        Alert.alert('Google', 'OAuth интеграцию выполним на сервере позже.');
+      }
+    } catch (e: any) {
+      Alert.alert('Google OAuth', e?.message || 'Не удалось выполнить вход через Google');
+    }
+  };
+
+  const handleMicrosoft = async () => {
+    Alert.alert('Microsoft OAuth', 'Вход через Microsoft пока не настроен.');
   };
 
   return (
     <View style={s.container}>
-      <Text style={s.title}>Welcome to project opex6</Text>
+      <Text style={s.title}>Добро пожаловать в OPEX6</Text>
 
-      <Text style={s.label}>Your username or email</Text>
+      <Text style={s.label}>Логин или Email</Text>
       <TextInput
         value={login}
         onChangeText={setLogin}
         autoCapitalize="none"
         keyboardType="email-address"
-        placeholder="Login or email"
+        placeholder="Логин или email"
         placeholderTextColor="#7a8699"
         style={s.input}
       />
 
-      <Text style={s.label}>Enter the password</Text>
+      <Text style={s.label}>Пароль</Text>
       <TextInput
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        placeholder="Password"
+        placeholder="Пароль"
         placeholderTextColor="#7a8699"
         style={s.input}
       />
@@ -58,29 +90,37 @@ export default function Login() {
       {!!err && <Text style={s.error}>{err}</Text>}
 
       <Pressable onPress={handleLogin} disabled={signing} style={s.primaryBtn}>
-        <Text style={s.primaryBtnText}>{signing ? 'Logging in...' : 'Login'}</Text>
+        <Text style={s.primaryBtnText}>{signing ? 'Входим…' : 'Войти'}</Text>
       </Pressable>
 
       <View style={s.dividerWrap}>
         <View style={s.divider} />
-        <Text style={s.dividerText}>or</Text>
+        <Text style={s.dividerText}>или</Text>
         <View style={s.divider} />
       </View>
 
       <Pressable onPress={handleGoogle} style={s.googleBtn}>
         <FontAwesome5 name="google" size={18} color="#fff" style={{ marginRight: 8 }} />
-        <Text style={s.googleBtnText}>Login with Google</Text>
+        <Text style={s.googleBtnText}>Войти через Google</Text>
       </Pressable>
 
-      <Link href="/signup" asChild>
-        <Pressable style={s.secondaryBtn}>
-          <Text style={s.secondaryBtnText}>Create account</Text>
-        </Pressable>
-      </Link>
+      <Pressable onPress={handleMicrosoft} style={[s.googleBtn, { backgroundColor: '#2563eb', marginTop: 10 }]}>
+        <FontAwesome5 name="microsoft" size={18} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={s.googleBtnText}>Войти через Microsoft</Text>
+      </Pressable>
 
-      <Text style={s.terms}>
-        By continuing, you agree to the Terms & Privacy Policy.
-      </Text>
+      <View style={{ marginTop: 16 }}>
+        <Text style={{ color: '#9fb0cf', textAlign: 'center', marginBottom: 8 }}>
+          У вас нет аккаунта?
+        </Text>
+        <Link href="/signup" asChild>
+          <Pressable style={s.secondaryBtn}>
+            <Text style={s.secondaryBtnText}>Зарегистрироваться</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+      <Text style={s.terms}>Продолжая, вы соглашаетесь с Условиями и Политикой.</Text>
     </View>
   );
 }
